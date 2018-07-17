@@ -1,0 +1,47 @@
+<script>
+    {% include 'jquery/jquery.min.js' %}
+</script>
+<script>
+    {% include 'js/bootstrap.bundle.min.js' %}
+</script>
+
+<script>
+    $().ready(function () {
+
+        $('.showParsed').click(function () {
+            $(this).addClass('hidden');
+            var modal = $(this).parent().parent();
+            modal.find('.variables, .script').addClass('hidden');
+            modal.find('.hideParsed, .parsedVariables, .parsedScript').removeClass('hidden');
+        });
+
+        $('.hideParsed').click(function () {
+            $(this).addClass('hidden');
+            var modal = $(this).parent().parent();
+            modal.find('.parsedVariables, .parsedScript').addClass('hidden');
+            modal.find('.showParsed, .variables, .script').removeClass('hidden');
+        });
+
+        $('.success-switch').click(function(e){
+            e.stopImmediatePropagation();
+            if($(this).is('.btn-success')) {
+                $(this).removeClass('btn-success').addClass('btn-danger');
+                $($(this).data('target')).addClass('will_fail');
+            }else {
+                $(this).removeClass('btn-danger').addClass('btn-success');
+                $($(this).data('target')).removeClass('will_fail');
+            }
+        });
+
+        $.fn.removeClassRegex = function (regex) {
+            return $(this).removeClass(function (index, classes) {
+                return classes.split(/\s+/).filter(function (c) {
+                    return regex.test(c);
+                }).join(' ');
+            });
+        };
+    });
+
+</script>
+
+{% include 'assets/pipeline_play.twig' %}

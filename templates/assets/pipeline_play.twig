@@ -1,0 +1,428 @@
+<script>
+    $().ready(function () {
+
+        class BaseHandler {
+
+            constructor(element) {
+                if (this.constructor === BaseHandler) {
+                    throw new TypeError('Abstract class "BaseHandler" cannot be instantiated directly.');
+                }
+                this.element = $(element);
+            }
+
+            setNext(handler) {
+                return this.nextHandler = handler;
+            }
+
+            hasNext() {
+                return typeof this.nextHandler !== 'undefined';
+            }
+
+            handle() {
+                if (this.hasNext()) {
+                    console.log('we have next: ' + (typeof this.nextHandler));
+                    return Promise.resolve(this.nextHandler.handle());
+                }
+                console.log('we should end the shit by now!');
+                return Promise.resolve(true);
+            }
+
+            clearState() {
+                this._clearOn(this.element);
+            }
+
+            showJobButtons() {
+                this.element.find('.ci-btn').show();
+            }
+
+            hideButton() {
+                this.element.find('.ci-btn').hide();
+            }
+
+            setJobStateIcon(state) {
+                return this._setJobStateIcons(state, this.element);
+            }
+
+            setJobButtonIcon(key) {
+                this._setJobButtonIcons(key, this.element);
+            }
+
+            _setJobStateIcons(state, el) {
+                return el.find('.ci-status-icon')
+                    .removeClassRegex(/^ci-status-icon-/)
+                    .addClass('ci-status-icon-' + state)
+                    .find('use')
+                    .attr('xlink:href', '#status_' + state)
+            }
+
+            _setJobButtonIcons(key, el) {
+                el.find('.ci-btn use').attr('xlink:href', '#' + key)
+            }
+
+            _clearOn(el) {
+                var classes = [
+                    'created',
+                    'in_progress',
+                    'warning',
+                    'success',
+                    'failed',
+                    'skipped',
+                    'canceled',
+                    'done'
+                ];
+                el.removeClass(classes.join(' '))
+                    .find('.' + classes.join(', .'))
+                    .removeClass(classes.join(' '));
+            }
+        }
+
+        class PipelineHandler extends BaseHandler {
+
+            constructor(pipelineHtml) {
+                super(pipelineHtml);
+
+                this._getPlayButton().click(function (e) {
+                    e.stopImmediatePropagation();
+
+                    if (!this.isRunning()) {
+                        this._start();
+                    } else {
+                        this._cancel();
+                    }
+                }.bind(this));
+            }
+
+
+            handle() {
+                this.clearState();
+                this.setJobStateIcon('created');
+                this.element.find('.build.manual').addClass('blocked');
+                this.hideButton();
+
+                return super.handle();
+            }
+
+            _getPlayButton() {
+                return this.element.find('.ci-control-btn.play-btn');
+            }
+
+            isRunning() {
+                return this._getPlayButton().hasClass('running');
+            }
+
+            _start() {
+                this.clearState();
+                const button = this._getPlayButton();
+
+                button.addClass('running')
+                    .find('use')
+                    .attr('xlink:href', '#cancel');
+
+                this.handle().then(function () {
+                    console.log("the end");
+                    this._stop();
+                }.bind(this));
+            }
+
+            _stop() {
+                this._getPlayButton()
+                    .removeClass('running')
+                    .find('use')
+                    .attr('xlink:href', '#play');
+            }
+
+            _cancel() {
+
+                this._setJobStateIcons(
+                    'canceled',
+                    this.element.find('.build:not(.done)')
+                );
+                this._setJobButtonIcons('retry', this.element.find('.build:not(.done)'));
+                this.showJobButtons();
+                this._clearOn(this.element
+                    .find('.build:not(.done)'));
+                this.element
+                    .find('.build:not(.done)')
+                    .addClass('canceled done');
+            }
+
+        }
+
+        class StageHandler extends BaseHandler {
+
+        }
+
+        class JobHandler extends BaseHandler {
+
+            constructor(elementHtml) {
+                super(elementHtml);
+                this.monitored = false;
+                this.element.find('.ci-btn').click(function (e) {
+                    e.stopImmediatePropagation();
+                    if (this.isSkipped()) {
+                        return;
+                    }
+                    if (this.isDone()) {
+                        this.restartJob();
+                    } else if (this.isInprogress()) {
+                        this.setJobStateIcon('canceled');
+                        this.setJobButtonIcon('retry');
+                        this.setDone();
+                        this.element.addClass('canceled');
+                    } else if (this.isManual()) {
+                        this.unblock();
+                    }
+
+                }.bind(this));
+            }
+
+            handle() {
+
+                if (this.isDone() || this.isInprogress()) {
+                    console.log('done or already running, so hand off: ' + this.getName());
+                    return super.handle();
+                }
+
+                if (this.nextIsJob()) {
+                    super.handle();
+                }
+
+                if (this.isManual() && this.isBlocked() && !this.isInprogress()) {
+
+                    this.setJobStateIcon('manual');
+                    this.setJobButtonIcon('play');
+                    this.showJobButtons();
+                    this.setMonitored(false);
+                }
+
+                return new Promise(function (resolve) {
+
+                    if (!this.canRun()) {
+                        this.setSkipped();
+                        resolve(this.handle());
+                    }
+
+                    (function loop() {
+
+                        let executionTime = 500;
+                        let timeoutId;
+
+                        if (this.isInprogress() && !this.isCanceled()) {
+
+                            if (this.willFail() && !this.allowsFailure()) {
+                                this.setFailed();
+                            } else {
+                                this.setPassed();
+                            }
+
+                            console.log('final call: ' + this.getName());
+
+                        } else if (!this.isInprogress() &&
+                            (
+                                (this.isManual() && !this.isBlocked())
+                                || (!this.isManual())
+                            )
+                        ) {
+                            executionTime = Math.floor(Math.random() * Math.floor(1000)) + 1000;
+                            this.setInprogress();
+
+                        }
+
+                        this.executeMonitor(resolve, timeoutId);
+
+                        if (this.isStageFinished()) {
+                            console.log('resolve ' + this.getName() + " in " + this.element.parents('.stage-column').find('.stage-name').html().trim());
+                            resolve(this.handle());
+                        } else if (this.isInprogress()) {
+                            console.log("executing timeloop: " + this.getName());
+                            timeoutId = setTimeout(loop.bind(this), executionTime);
+                        } else if (this.isDone() && this.nextIsJob()) {
+                            resolve(this.handle());
+                        }
+
+                    }.bind(this))();
+
+
+                }.bind(this));
+            }
+
+            isStageFinished() {
+                return this.element
+                    .parents('.stage-column')
+                    .find('.build:not(.done)')
+                    .length === 0;
+            }
+
+            canRun() {
+                var prevStage = this.element.parents('.stage-column').prev();
+                if (prevStage.length === 0) {
+                    return true;
+                }
+
+                if (this.element.hasClass('on_failure')) {
+                    return prevStage.find('.build.failed.done, .build.skipped.done, .build.canceled.done').length > 0;
+
+                } else if (this.element.is('.on_success, .manual')) {
+                    return prevStage.find('.build.failed.done, .build.skipped.done, .build.canceled.done').length === 0;
+
+                } else if (
+                    prevStage.find('.build.skipped.done, .build.canceled.done').length > 0 ||
+                    this.element.parents('.stage-column').find('.build.skipped.done, .build.canceled.done').length > 0
+                ) {
+                    return false;
+
+                }
+
+                return true;
+            }
+
+            getName() {
+                return this.element.find('.ci-status-text:first').html().trim();
+            }
+
+            isMonitored() {
+                return this.monitored;
+            }
+
+            setMonitored(state) {
+                this.monitored = !state === false;
+            }
+
+            executeMonitor(resolve, timeoutId) {
+                if (!this.isMonitored()) {
+                    let random = Math.random();
+                    this.setMonitored(true);
+                    (function jobMonitor() {
+                        if(!this.isMonitored()) {
+                            return;
+                        }
+                        if (this.isCanceled() || this.isSkipped() || this.isDone()) {
+                            console.log("jobMonitor: stop monitoring: " + this.getName());
+                            this.setMonitored(false);
+                            if (typeof timeoutId !== 'undefined') {
+                                clearTimeout(timeoutId);
+                            }
+                            if (this.isCanceled() || this.isSkipped()) {
+                                resolve(this.handle());
+                            }
+                        } else if (
+                            this.isInprogress()
+                            || (!this.isInprogress() && this.isManual() && this.isBlocked())
+                        ) {
+                            if (!this.getName().indexOf('Hotfix web')) {
+                                console.log('keep listening: ' + this.getName()+random);
+                            }
+                            setTimeout(jobMonitor.bind(this), 100);
+                        } else if (this.isManual() && !this.isBlocked()) {
+                            console.log("jobMonitor: resuming manual job and stop instance: " + this.getName());
+                            this.setMonitored(false);
+                            resolve(this.handle());
+                        }
+                    }.bind(this))();
+
+                }
+            }
+
+            nextIsJob() {
+                return this.hasNext() && this.nextHandler instanceof JobHandler
+            }
+
+
+            isManual() {
+                return this.element.hasClass('manual');
+            }
+
+            allowsFailure() {
+                return this.element.hasClass('allow_failure');
+            }
+
+            willFail() {
+                return this.element.hasClass('will_fail');
+            }
+
+            isBlocked() {
+                return this.element.hasClass('blocked');
+            }
+
+            unblock() {
+                this.element.removeClass('blocked');
+            }
+
+            setInprogress() {
+
+                this.clearState();
+                this.element.addClass('in_progress');
+                this.setJobButtonIcon('cancel');
+                this.setJobStateIcon('running');
+                this.showJobButtons();
+            }
+
+            isInprogress() {
+                return this.element.hasClass('in_progress');
+            }
+
+            restartJob() {
+                this.clearState();
+                this.setJobStateIcon('running');
+                this.handle();
+            }
+
+            setSkipped() {
+
+                this.setDone();
+                this.setJobStateIcon('skipped');
+                this.element.addClass('skipped');
+
+            }
+
+            isSkipped() {
+                return this.element.hasClass('skipped');
+            }
+
+            isCanceled() {
+                return this.element.hasClass('canceled');
+            }
+
+            setFailed() {
+                this.setDone();
+                this.setJobStateIcon('failed');
+                this.element.addClass('failed');
+            }
+
+            setPassed() {
+                this.setDone();
+                if (this.allowsFailure() && !this.isManual()) {
+                    this.setJobStateIcon('warning');
+                } else {
+                    this.setJobStateIcon('success');
+                }
+            }
+
+            setDone() {
+                this.clearState();
+                if (this.element.hasClass('manual')) {
+                    this.setJobButtonIcon('play')
+                } else {
+                    this.setJobButtonIcon('retry');
+                }
+                this.element.addClass('done');
+            }
+
+            isDone() {
+                return this.element.hasClass('done');
+            }
+        }
+
+        $('.pipeline-graph').each(function (o, pipelineHtml) {
+            var pipeline = new PipelineHandler(pipelineHtml);
+
+            $(pipelineHtml).find('.stage-column').each(function (i, stageHtml) {
+                pipeline = pipeline.setNext(new StageHandler(stageHtml));
+
+                $(stageHtml).find('.build').each(function (i, jobHtml) {
+                    pipeline = pipeline.setNext(new JobHandler(jobHtml));
+                });
+            });
+        });
+    });
+</script>

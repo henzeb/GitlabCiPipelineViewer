@@ -1,0 +1,161 @@
+{% set replaceables = {' ': '-', '?':''} %}
+{% htmlcompress %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Gitlab Pipelines</title>
+    {% include 'assets/styles.twig' %}
+</head>
+<body>
+
+{% include 'assets/icons.twig' %}
+
+{% for pipeline in pipelines %}
+
+    <div class="build-content middle-block js-pipeline-graph">
+        <h2>Pipeline for: {{ pipeline.name }}</h2>
+        <div class="pipeline-visualization pipeline-graph pipeline-tab-content">
+            <div class="ci-control-panel">
+                <button type="button"
+                        class="ci-control-btn play-btn btn btn-light">
+                    <svg class="s16">
+                        <use xmlns:xlink="http://www.w3.org/1999/xlink"
+                             xlink:href="#play">
+                        </use>
+                    </svg>
+                </button>
+                <select class="form-control form-control-sm d-inline-flex invisible">
+                    <option>Small select</option>
+                </select>
+            <br/>
+            </div>
+            <ul class="stage-column-list">
+                {% for key, stage in pipeline.stages if stage is not empty %}
+
+                    <li class="stage-column ">
+                        <div class="stage-name">
+                            {{ key }}
+                        </div>
+                        <div class="builds-container">
+                            <ul>
+                                {% for job in stage %}
+
+                                    {% set icon,button = 'success','retry' %}
+
+                                    {% if job.when == 'manual' %}
+                                        {% set icon,button = 'manual','play' %}
+                                    {% endif %}
+
+                                    {% if job.allow_failure and job.when != 'manual' %}
+                                        {% set icon = 'warning' %}
+                                    {% endif %}
+
+                                    <li class="build {{ job.when }}
+                                                {{ job.allow_failure ? 'allow_failure' : '' }}
+                                                 done
+                                                "
+                                        id="{{ pipeline.name|replace({' ': '-'}) }}-{{ key|replace(replaceables) }}-{{ job.name|replace(replaceables) }}"
+                                    >
+                                        <div class="curve"></div>
+                                        <div class="ci-job-component">
+                                            <a title="{{ job.name }}" class="build-content"
+                                               data-toggle="modal"
+                                               href="#ci-badge-{{ pipeline.name|replace({' ': '-'}) }}-{{ key|replace(replaceables) }}-{{ job.name|replace(replaceables) }}"
+                                            >
+                                                <span class="ci-job-name-component">
+                                                    <span class="ci-status-icon ci-status-icon-{{ icon }} js-ci-status-icon-{{ icon }}">
+                                                        <svg class="s16">
+                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                                 xlink:href="#status_{{ icon }}">
+                                                            </use>
+                                                        </svg>
+                                                    </span>
+                                                    <span class="ci-status-text">
+                                                     {{ job.name }}
+                                                    </span>
+                                                    <button type="button"
+                                                            class="ci-btn btn-blank btn-transparent ci-action-icon-container ci-action-icon-wrapper">
+                                                        <svg class="s16">
+                                                            <use xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                                 xlink:href="#{{ button }}">
+                                                            </use>
+                                                        </svg>
+                                                    </button>
+                                                </span>
+
+                                            </a>
+                                        </div>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+    {% for key, stage in pipeline.stages if stage is not empty %}
+        {% for job in stage %}
+
+            <div class="modal" tabindex="-1" role="dialog"
+                 id="ci-badge-{{ pipeline.name|replace({' ': '-'}) }}-{{ key|replace(replaceables) }}-{{ job.name|replace(replaceables) }}">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h3 class="modal-title">{{ pipeline.name }} -> {{ key }} -> {{ job.name }}</h3>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        {% if job.variables is not empty %}
+                            <div class="modal-top">
+                                <input type="button" class="btn btn-success success-switch" value="Will succeed" data-target="#{{ pipeline.name|replace({' ': '-'}) }}-{{ key|replace(replaceables) }}-{{ job.name|replace(replaceables) }}"/>&nbsp;
+                                <input type="button" class="btn btn-primary showParsed hidden" value="Show parsed"/>
+                                <input type="button" class="btn btn-primary hideParsed" value="Show raw"/>
+
+                            </div>
+                        {% endif %}
+                        <div class="modal-body">
+
+                            {% if job.variables is not empty %}
+                                <h5>Variables:</h5>
+                                <ul class="variables hidden">
+                                    {% for variable,value in job.variables %}
+                                        <li>{{ variable }} = '{{ value }}'</li>
+                                    {% endfor %}
+                                </ul>
+                                <ul class="parsedVariables">
+                                    {% for variable,value in job.parsedVariables %}
+                                        <li>{{ variable }} = '{{ value }}'</li>
+                                    {% endfor %}
+                                </ul>
+                            {% endif %}
+                            {% if job.script is not empty %}
+                                <h5>Console output:</h5>
+                                <div class="console script hidden">
+                                    {% for scriptline in job.script %}
+                                        <p>$ {{ scriptline }}</p>
+                                    {% endfor %}
+                                </div>
+                                <div class="console parsedScript">
+                                    {% for scriptline in job.parsedScript %}
+                                        <p>$ {{ scriptline }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
+{% endfor %}
+{% include 'assets/scripts.twig' %}
+</body>
+
+</html>
+{% endhtmlcompress %}

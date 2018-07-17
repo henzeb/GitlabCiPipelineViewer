@@ -1,0 +1,20 @@
+{
+"name": "henzeb/gitlabcipipelineviewer",
+"description": "Reads a .gitlab-ci.yml and makes a representation of it in HTML",
+"require": {
+    "symfony/yaml": "^4.1",
+    "symfony/console": "^4.1",
+    "twig/twig": "^2.0",
+    "twbs/bootstrap": "^4.1",
+    "components/jquery": "^3.3",
+        "nochso/html-compress-twig": "^2.0"
+  },
+  "autoload": {
+    "classmap": [
+      "src/"
+    ]
+  },
+  "psr-4": {
+    "Pipeline\\": "src/classes"
+  }
+}

@@ -1,0 +1,478 @@
+<style>
+    {% include 'css/bootstrap.min.css' %}
+</style>
+<style>
+
+    @media all {
+        :root {
+            --line-color: #bfbfbf;
+        }
+
+        body {
+            margin: 15px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            font-size: 14px;
+            line-height: 1.428571429;
+        }
+
+        a {
+            background-color: transparent;
+        }
+
+        a:active, a:hover {
+            outline: 0;
+        }
+
+        * {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+
+        *:before, *:after {
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+        }
+
+        a {
+            color: #1b69b6;
+            text-decoration: none;
+        }
+
+        a:hover, a:focus {
+            color: #134a81;
+            text-decoration: underline;
+        }
+
+        a:focus {
+            outline: thin dotted;
+            outline: 5px auto -webkit-focus-ring-color;
+            outline-offset: -2px;
+        }
+
+        a {
+            transition: background-color 100ms linear, color 100ms linear, border 100ms linear;
+        }
+
+        h2 {
+            font-family: inherit;
+            font-weight: 500;
+            line-height: 1.1;
+            color: inherit;
+            margin-top: 20px;
+            margin-bottom: 10px;
+            font-size: 30px;
+        }
+
+        .text-center {
+            text-align: center;
+        }
+
+        ul {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        ul ul {
+            margin-bottom: 0;
+        }
+
+        h2 {
+            color: #2e2e2e;
+            font-weight: 600;
+        }
+
+        .pipeline-tab-content {
+            background-color: #fafafa;
+            padding: 16px;
+
+        }
+
+        .pipeline-graph {
+            white-space: nowrap;
+            transition: max-height 0.3s, padding 0.3s;
+        }
+
+        .pipeline-graph .stage-column-list, .pipeline-graph .builds-container > ul {
+            padding: 0;
+        }
+
+        .pipeline-graph a {
+            text-decoration: none;
+            color: #2e2e2e;
+        }
+
+        .pipeline-graph .stage-column {
+            display: inline-block;
+            vertical-align: top;
+        }
+
+        .pipeline-graph .stage-column:not(:last-child) {
+            margin-right: 44px;
+        }
+
+        .pipeline-graph .stage-column li {
+            list-style: none;
+        }
+
+        .pipeline-graph .stage-column:last-child .build:first-child::after {
+            border: 0;
+        }
+
+        .pipeline-graph .stage-column:last-child .build:not(:first-child)::after {
+            border: 0;
+        }
+
+        .pipeline-graph .stage-column:last-child .build .curve::before {
+            display: none;
+        }
+
+        .pipeline-graph .stage-column:first-child .build .curve::after {
+            display: none;
+        }
+
+        .pipeline-graph .stage-column .curve {
+            display: none;
+        }
+
+        .pipeline-graph .stage-column .curve::before, .pipeline-graph .stage-column .curve::after {
+            content: '';
+            width: 21px;
+            height: 25px;
+            position: absolute;
+            top: -30px;
+            border-top: 2px solid var(--line-color);
+        }
+
+        .pipeline-graph .stage-column .curve::after {
+            left: -44px;
+            border-right: 2px solid var(--line-color);;
+            border-radius: 0 20px;
+        }
+
+        .pipeline-graph .stage-column .curve::before {
+            right: -44px;
+            border-left: 2px solid var(--line-color);;
+            border-radius: 20px 0 0;
+        }
+
+        .pipeline-graph .stage-name {
+            margin: 0 0 15px 10px;
+            font-weight: 600;
+            width: 176px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pipeline-graph .build {
+            position: relative;
+            width: 186px;
+            margin-bottom: 10px;
+            white-space: normal;
+        }
+
+        .pipeline-graph .build .build-content {
+            display: inline-block;
+            padding: 8px 10px 9px;
+            width: 100%;
+            border: 1px solid var(--line-color);;
+            border-radius: 30px;
+            background-color: #fff;
+        }
+
+        .pipeline-graph .build a.build-content:hover {
+            background-color: #eee;
+            border: 1px solid #c1c1c1;
+        }
+
+        .pipeline-graph .build:first-child::after {
+            content: '';
+            position: absolute;
+            top: 48%;
+            right: -48px;
+            border-top: 2px solid var(--line-color);;
+            width: 48px;
+            height: 1px;
+        }
+
+        .pipeline-graph .build:not(:first-child)::after, .pipeline-graph .build:not(:first-child)::before {
+            content: '';
+            top: -49px;
+            position: absolute;
+            border-bottom: 2px solid var(--line-color);;
+            width: 25px;
+            height: 69px;
+        }
+
+        .pipeline-graph .build:not(:first-child)::after {
+            right: -25px;
+            border-right: 2px solid var(--line-color);;
+            border-radius: 0 0 20px;
+        }
+
+        .pipeline-graph .build:not(:first-child)::before {
+            left: -25px;
+            border-left: 2px solid var(--line-color);;
+            border-radius: 0 0 0 20px;
+        }
+
+        .pipeline-graph .build:nth-child(2)::after, .pipeline-graph .build:nth-child(2)::before {
+            height: 29px;
+            top: -9px;
+        }
+
+        .pipeline-graph .build:nth-child(2) .curve {
+            display: block;
+        }
+
+        .ci-status-text {
+            max-width: 110px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: bottom;
+            display: inline-block;
+            position: relative;
+            font-weight: 400;
+        }
+
+        .pipeline-graph, .pipeline-graph:before, .pipeline-graph:after {
+            background: transparent !important;
+            color: #000 !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+        }
+    }
+
+    svg.s16 {
+        width: 16px;
+        height: 16px;
+    }
+
+    .ci-status-icon-success svg, .ci-status-icon-passed svg {
+        fill: #1aaa55
+    }
+
+    .ci-status-icon-failed svg {
+        fill: #db3b21
+    }
+
+    .ci-status-icon-pending svg, .ci-status-icon-warning svg {
+        fill: #fc9403
+    }
+
+    .ci-status-icon-running svg {
+        fill: #2e87e0
+    }
+
+    .ci-status-icon-canceled svg, .ci-status-icon-disabled svg {
+        fill: #2e2e2e
+    }
+
+    .ci-status-icon-created svg, .ci-status-icon-skipped svg, .ci-status-icon-notfound svg {
+        fill: #c4c4c4
+    }
+
+    .ci-status-icon-manual svg {
+        fill: #2e2e2e
+    }
+
+    .pipeline-graph svg {
+        vertical-align: middle;
+    }
+
+    .pipeline-graph .build .ci-status-icon svg {
+        height: 20px;
+        width: 20px;
+    }
+
+    .ci-btn {
+        color: inherit;
+        font: inherit;
+        margin: 0;
+    }
+
+    .ci-btn {
+        overflow: visible;
+    }
+
+    .ci-btn {
+        text-transform: none;
+    }
+
+    .ci-btn {
+        -webkit-appearance: button . ci-btn;
+        cursor: pointer;
+    }
+
+    .ci-btn::-moz-focus-inner {
+        border: 0;
+        padding: 0;
+    }
+
+    .ci-btn {
+        font-family: inherit;
+        font-size: inherit;
+        line-height: inherit;
+    }
+
+    .ci-btn {
+        display: inline-block;
+        margin-bottom: 0;
+        font-weight: normal;
+        text-align: center;
+        vertical-align: middle;
+        touch-action: manipulation;
+        cursor: pointer;
+        background-image: none;
+        border: 1px solid transparent;
+        white-space: nowrap;
+        padding: 6px 16px;
+        font-size: 14px;
+        line-height: 1.428571429;
+        border-radius: 3px;
+        -webkit-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+    }
+
+    .ci-btn:focus, .ci-btn:active:focus {
+        outline: thin dotted;
+        outline: 5px auto -webkit-focus-ring-color;
+        outline-offset: -2px;
+    }
+
+    .ci-btn:hover, .ci-btn:focus {
+        color: #2e2e2e;
+        text-decoration: none;
+    }
+
+    .ci-btn:active {
+        outline: 0;
+        background-image: none;
+        -webkit-box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+        box-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+    }
+
+    .ci-btn {
+        transition: background-color 100ms linear, border-color 100ms linear, color 100ms linear, box-shadow 100ms linear;
+    }
+
+    .ci-btn {
+        border-radius: 3px;
+        font-size: 14px;
+        font-weight: 400;
+        padding: 6px 10px;
+        background-color: #fff;
+        border-color: #e5e5e5;
+        color: #2e2e2e;
+        color: #2e2e2e;
+    }
+
+    .ci-btn:focus, .ci-btn:active {
+        background-color: #ececec;
+        box-shadow: rgba(0, 0, 0, 0.16);
+    }
+
+    .ci-btn:hover, .ci-btn:focus {
+        background-color: #f0f0f0;
+        border-color: #e3e3e3;
+        color: #2e2e2e;
+    }
+
+    .ci-btn:active {
+        box-shadow: rgba(0, 0, 0, 0.16);
+        background-color: #eaeaea;
+        border-color: #e3e3e3;
+        color: #2e2e2e;
+    }
+
+    .ci-btn:focus:active {
+        outline: 0;
+    }
+
+    .ci-btn svg {
+        height: 15px;
+        width: 15px;
+        position: relative;
+        top: 2px;
+    }
+
+    .ci-btn-transparent {
+        color: #707070;
+        background-color: transparent;
+        border: 0;
+    }
+
+    .ci-btn-transparent:hover, .ci-btn-transparent:active, .ci-btn-transparent:focus {
+        background-color: transparent;
+        box-shadow: none;
+    }
+
+    .ci-btn-blank {
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+    }
+
+    .ci-btn-blank:hover, .ci-btn-blank:active, .ci-btn-blank:focus {
+        outline: 0;
+        background: transparent;
+        box-shadow: none;
+    }
+
+    .pipeline-graph .build .ci-action-icon-container {
+        position: absolute;
+        right: 5px;
+        top: 5px;
+    }
+
+    .pipeline-graph .build .ci-action-icon-container.ci-action-icon-wrapper {
+        height: 30px;
+        width: 30px;
+        background: #fff;
+        border: 1px solid #e5e5e5;
+        border-radius: 100%;
+        display: block;
+    }
+
+    .pipeline-graph .build .ci-action-icon-container.ci-action-icon-wrapper:hover {
+        background-color: #eee;
+        border: 1px solid #c1c1c1;
+    }
+
+    .pipeline-graph .build .ci-action-icon-container.ci-action-icon-wrapper:hover svg {
+        fill: #2e2e2e;
+    }
+
+    .pipeline-graph .build .ci-action-icon-container.ci-action-icon-wrapper svg {
+        fill: #707070;
+        position: relative;
+        top: -1px;
+    }
+
+    .console {
+        background: #000;
+        border: 3px groove #ccc;
+        color: #ccc;
+        display: block;
+        padding: 5px;
+    }
+
+    .variables.hidden, .script.hidden, .parsedVariables.hidden, .parsedScript.hidden, .btn.hidden {
+        display: none;
+    }
+
+    .modal-top {
+        display: flex;
+        -ms-flex-align: center;
+        align-items: center;
+        -ms-flex-pack: end;
+        justify-content: flex-end;
+        padding: 1rem;
+    }
+</style>
